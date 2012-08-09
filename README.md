@@ -97,7 +97,7 @@ to ensure that all important probes are registered before tracing.
 
 ## License
 
-Copyright 2012 Eric Saxby
+Copyright (c) 2012 Eric Saxby
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
