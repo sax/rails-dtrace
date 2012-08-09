@@ -4,8 +4,8 @@ require File.expand_path('../lib/rails-dtrace/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Eric Saxby"]
   gem.email         = ["sax@livinginthepast.org"]
-  gem.description   = %q{TODO: Write a gem description}
-  gem.summary       = %q{TODO: Write a gem summary}
+  gem.description   = %q{Turn ActiveSupport::Notification instruments into DTrace probes. This allows you to trace Rails apps.}
+  gem.summary       = %q{Add DTrace probes to Rails}
   gem.homepage      = ""
 
   gem.files         = `git ls-files`.split($\)
