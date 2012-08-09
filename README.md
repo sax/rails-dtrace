@@ -5,6 +5,8 @@ instruments in Rails, turning them into DTrace probes.
 
 ## Requirements
 
+Rails > 3.0
+
 An OS that supports DTrace. For example:
 * MacOS X
 * Illumos
@@ -55,6 +57,17 @@ The following dtrace command can be used, as an example:
 ```bash
 sudo dtrace -n 'ruby*:rails:: { printf("%d %d %s %s", arg0, arg1,
   copyinstr(arg2), copyinstr(arg3)) }'
+```
+
+Example output:
+
+```
+1  15406 start_processing:action_controller 1344495838 1344495838 b02472370ff8f9669301 {:controller=>"ThingsController", :action=>"index", :params=>{"action"=>"index", "controller"=>"things"}, :format=>"*/*", :method=>"GET", :path=>"/things"}
+1  15407                sql:active_record 1344495838 1344495838 4595e4d30b17bdb96fe9 {:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70184895988280, :binds=>[]}
+1  15408     !render_template:action_view 1344495838 1344495838 b02472370ff8f9669301 {:virtual_path=>"things/index"}
+1  15409      render_template:action_view 1344495838 1344495838 b02472370ff8f9669301 {:identifier=>"/path/to/application/app/views/things/index.html.erb", :layout=>"layouts/application"}
+1  15408     !render_template:action_view 1344495838 1344495838 b02472370ff8f9669301 {:virtual_path=>"layouts/application"}
+1  15410 process_action:action_controller 1344495838 1344495838 b02472370ff8f9669301 {:controller=>"ThingsController", :action=>"index", :params=>{"action"=>"index", "controller"=>"things"}, :format=>"*/*", :method=>"GET", :path=>"/things", :status=>200, :view_runtime=>5.199, :db_runtime=>0.128}
 ```
 
 Notifications are lazy-loaded, so even though rails-dtrace subscribes to
