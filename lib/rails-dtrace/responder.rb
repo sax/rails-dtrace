@@ -1,14 +1,5 @@
 require 'usdt'
 
-=begin
-
-Problems:
-* How do you dynamically enable/disable probes?
-* Split name on '.' sucks
-* Notifications include entry AND exit. Can we fire our own entry/exit probes?
-
-=end
-
 module DTrace
   class Responder
     cattr_reader :probes, :provider
