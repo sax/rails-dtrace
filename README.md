@@ -12,6 +12,8 @@ An OS that supports DTrace. For example:
 * Illumos
 * SmartOS
 * Solaris
+* BSD
+* Oracle Linux ?
 
 ## Installation
 
@@ -63,32 +65,42 @@ Note that notifications are lazy-loaded, so even though rails-dtrace subscribes 
 
 Arguments to probes are:
 
-* `arg0` - Start time of notification - Integer
-* `arg1` - End time of notification - Integer
-* `arg2` - Unique identifier of notification - String
-* `arg3` - Stringified hash of notification payload - String
+* `arg0` - Unique identifier of notification - String
+* `arg1` - Stringified hash of notification payload - String
+* `arg2` - Nanoseconds between start and finish of event - Integer
 
-The notification name is split to create the probe function and the probe name. For instance, `sql.active_record` becomes `ruby*:rails:sql:active_record`. This is probably far too simplistic.
+The notification name is turned into the probe function, and the probe name is defined as 'event'. For instance, `sql.active_record` becomes `ruby*:rails:sql.active_record:event`. This is to make events somewhat compatible with the edge Rails method of firing events, described below.
+
+Some operating systems (MacOS X, I'm looking at you) don't give you nanosecond time resolution. In this case you get microseconds multipled by 1000.
 
 The following dtrace command can be used, as an example:
 
 ```bash
-sudo dtrace -n 'ruby*:rails:sql:active_record { printf("%d %d %s %s", arg0, arg1,
-     copyinstr(arg2), copyinstr(arg3)) }'
+sudo dtrace -n 'ruby*:rails:sql.active_record: { 
+  printf(
+    "%s \n\t %s \n\t %d", 
+    copyinstr(arg0), copyinstr(arg1),
+    arg2
+  )
+}'
 ```
 
 Example output:
 
 ```
-1  15407  sql:active_record 1344495838 1344495838 4595e4d30b17bdb96fe9 {:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70184895988280, :binds=>[]}
+  1  15407  sql.active_record:event 4595e4d30b17bdb96fe9 
+	 {:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70184895988280, :binds=>[]} 
+	 238000
 ```
 
 
 ### Rails 4 / Edge Rails
 
-Note that you need to use the `rails_4` branch in order for this to work. In newer Rails, notifications become more dtrace-like. Rather than a notification sending a message to one `call` method (that wraps start time and end time), they send two messages, `start` and `finish`. This way, you can do your own math on the notifications.
+Note that you need to use the `rails_4` branch in order for this to work. In newer Rails, notifications become more dtrace-like. Rather than a notification sending a message to `#call` (which gets start time and end time), they can send two messages, `#start` and `#finish`. This way, you can do your own math on the notifications.
 
-In rails-dtrace, the notification name becomes the probe function, and we map `start -> entry` and `finish -> exit`.
+In *rails-dtrace*, the notification name becomes the probe function, and we map `start -> entry` and `finish -> exit`.
+
+If a notification subscriber responds to #call, ActiveSupport::Notifications will send methods in the Rails 3 way. For this reason the rails-dtrace code is incompatible at this time. It could conceivably be done with some metaprogramming to trick the Rails framework, but I'd prefer to keep the rails-dtrace code small and readable.
 
 Arguments to probes are:
 
@@ -98,17 +110,22 @@ Arguments to probes are:
 The following dtrace command can be used, as an example:
 
 ```bash
-sudo dtrace -n 'ruby*:rails:sql.active_record: { printf("%s %s", copyinstr(arg0),
-     copyinstr(arg1)) }'
+sudo dtrace -n 'ruby*:rails:sql.active_record: { 
+  printf(
+    "%s \n\t %s", 
+    copyinstr(arg0),
+    copyinstr(arg1)
+  )
+}'
 ```
 
 Example output:
 
 ```
-3  52609  sql.active_record:entry a392841cfd75a132432e
-	{:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70362294355260, :binds=>[]}
-3  52610  sql.active_record:exit a392841cfd75a132432e
-	{:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70362294355260, :binds=>[]}
+3  52609  sql.active_record:entry a392841cfd75a132432e 
+	 {:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70362294355260, :binds=>[]}
+3  52610  sql.active_record:exit a392841cfd75a132432e 
+	 {:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70362294355260, :binds=>[]}
 ```
 
 
@@ -124,7 +141,7 @@ Example output:
 
 * How the F do you test this thing?
 * Can Rails instruments be detected at initialization time to register all probes at once?
-* The Responder turns the Notification payload (a hash) into a string.
+* The Subscriber turns the Notification payload (a hash) into a string.
   This can surely be better.
 
 ## License
