@@ -12,29 +12,54 @@ Problems:
 module DTrace
   class Responder
     cattr_reader :probes, :provider
-    cattr_writer :logger
 
     @@provider = USDT::Provider.create :ruby, :rails
     @@probes = {}
     @@enabled = false
 
-    def self.logger
-      @@logger || Logger.new
-    end
-
-    def self.call(name, started, finished, unique_id, payload)
-      unless probes.keys.include?(name)
-        func_name, probe_name = name.split('.')
-        p = @@provider.probe(func_name, probe_name, :integer, :integer, :string, :string)
-        probes[name] = p
-        logger.debug "Adding dtrace probe: #{name}"
-        @@provider.disable if @@enabled
-        @@provider.enable
-        @@enabled = true
+    class << self
+      def logger
+        @logger ||= Rails.logger if defined?(Rails)
+        @logger
       end
 
-      if probes[name].enabled?
-        probes[name].fire(started.to_i, finished.to_i, unique_id, payload.inspect)
+      attr_writer :logger
+
+      def start(notification, id, payload)
+        fire_probe(notification, id, payload, 'entry')
+      end
+
+      def finish(notification, id, payload)
+        fire_probe(notification, id, payload, 'exit')
+      end
+
+      protected
+
+      def find_or_create_probe(probe_func, probe_name)
+        probe_id = "#{probe_func}::#{probe_name}"
+
+        unless probes.keys.include?(probe_id)
+          probe = provider.probe(probe_func, probe_name, :string, :string)
+          probes[probe_id] = probe
+
+          logger.debug "Adding DTrace probe: #{probe_id}"
+
+          provider.disable if @@enabled
+          provider.enable
+          @@enabled = true
+        end
+
+        probes[probe_id]
+      end
+
+      private
+
+      def fire_probe(notification, id, payload, type)
+        probe = find_or_create_probe(notification, type)
+
+        if probe.enabled?
+          probe.fire(id, payload.inspect)
+        end
       end
     end
   end
