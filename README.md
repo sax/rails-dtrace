@@ -5,6 +5,8 @@ instruments in Rails, turning them into DTrace probes.
 
 ## Requirements
 
+Rails > 3.0
+
 An OS that supports DTrace. For example:
 * MacOS X
 * Illumos
@@ -27,6 +29,17 @@ And then execute:
 $ bundle
 ```
 
+If you are using edge Rails (master/4.0), the notification syntax has
+changed in an awesome way. In this case, you'll want the `rails_4`
+branch.
+
+```ruby
+gem 'ruby-usdt', :git => 'git://github.com/chrisa/ruby-usdt.git',
+        :submodules => true, :branch => 'disable_provider'
+gem 'rails-dtrace', :git => 'git://github.com/sax/rails-dtrace.git',
+        :branch => 'rails_4'
+```
+
 ## Warning
 
 This gem in an experiment in progress. The code does not have automated
@@ -42,26 +55,62 @@ tests around this gem) these warnings will disappear.
 ## Usage
 
 Once you add the gem to your Rails application, it will automatically
-subscribe to all notifications, turning them into DTrace probes. The
-arguments to the probes will be:
+subscribe to all notifications, turning them into DTrace probes. 
+
+Note that notifications are lazy-loaded, so even though rails-dtrace subscribes to all available instruments, they will only be converted to probes as they fire in Rails code. For this reason, in order to get a full picture of what is happening in a Rails process, enough load should be generated to ensure that all important probes are registered before tracing.
+
+### Rails 3
+
+Arguments to probes are:
 
 * `arg0` - Start time of notification - Integer
 * `arg1` - End time of notification - Integer
 * `arg2` - Unique identifier of notification - String
 * `arg3` - Stringified hash of notification payload - String
 
+The notification name is split to create the probe function and the probe name. For instance, `sql.active_record` becomes `ruby*:rails:sql:active_record`. This is probably far too simplistic.
+
 The following dtrace command can be used, as an example:
 
 ```bash
-sudo dtrace -n 'ruby*:rails:: { printf("%d %d %s %s", arg0, arg1,
-  copyinstr(arg2), copyinstr(arg3)) }'
+sudo dtrace -n 'ruby*:rails:sql:active_record { printf("%d %d %s %s", arg0, arg1,
+     copyinstr(arg2), copyinstr(arg3)) }'
 ```
 
-Notifications are lazy-loaded, so even though rails-dtrace subscribes to
-all available instruments, they will only be converted to probes as
-they fire in Rails code. For this reason, in order to get a full picture
-of what is happening in a Rails process, enough load should be generated
-to ensure that all important probes are registered before tracing.
+Example output:
+
+```
+1  15407  sql:active_record 1344495838 1344495838 4595e4d30b17bdb96fe9 {:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70184895988280, :binds=>[]}
+```
+
+
+### Rails 4 / Edge Rails
+
+Note that you need to use the `rails_4` branch in order for this to work. In newer Rails, notifications become more dtrace-like. Rather than a notification sending a message to one `call` method (that wraps start time and end time), they send two messages, `start` and `finish`. This way, you can do your own math on the notifications.
+
+In rails-dtrace, the notification name becomes the probe function, and we map `start -> entry` and `finish -> exit`.
+
+Arguments to probes are:
+
+* `arg0` - Unique identifier of notification - String
+* `arg1` - Stringified hash of notification payload - String
+
+The following dtrace command can be used, as an example:
+
+```bash
+sudo dtrace -n 'ruby*:rails:sql.active_record: { printf("%s %s", copyinstr(arg0),
+     copyinstr(arg1)) }'
+```
+
+Example output:
+
+```
+3  52609  sql.active_record:entry a392841cfd75a132432e
+	{:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70362294355260, :binds=>[]}
+3  52610  sql.active_record:exit a392841cfd75a132432e
+	{:sql=>"SELECT \"things\".* FROM \"things\" ", :name=>"Thing Load", :connection_id=>70362294355260, :binds=>[]}
+```
+
 
 ## Contributing
 
@@ -74,17 +123,13 @@ to ensure that all important probes are registered before tracing.
 ## Suggestions for Contributions
 
 * How the F do you test this thing?
-* Can Rails instruments be detected at initialization time?
-* Notifications do start/end in one instrument. DTrace probes tend to
-  fire multiple probes, on entry and exit. This lets you write scripts
-  to do neat analytics on event timing. Can Notifications be hacked to
-  do this?
+* Can Rails instruments be detected at initialization time to register all probes at once?
 * The Responder turns the Notification payload (a hash) into a string.
   This can surely be better.
 
 ## License
 
-Copyright 2012 Eric Saxby
+Copyright (c) 2012 Eric Saxby
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
