@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["sax@livinginthepast.org"]
   gem.description   = %q{Turn ActiveSupport::Notification instruments into DTrace probes. This allows you to trace Rails apps.}
   gem.summary       = %q{Add DTrace probes to Rails}
-  gem.homepage      = "https://github.com/sax/dtrace-rails"
+  gem.homepage      = "https://github.com/sax/rails-dtrace"
 
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| ::File.basename(f) }
