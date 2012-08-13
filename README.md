@@ -31,17 +31,6 @@ And then execute:
 $ bundle
 ```
 
-If you are using edge Rails (master/4.0), the notification syntax has
-changed in an awesome way. In this case, you'll want the `rails_4`
-branch.
-
-```ruby
-gem 'ruby-usdt', :git => 'git://github.com/chrisa/ruby-usdt.git',
-        :submodules => true, :branch => 'disable_provider'
-gem 'rails-dtrace', :git => 'git://github.com/sax/rails-dtrace.git',
-        :branch => 'rails_4'
-```
-
 ## Warning
 
 This gem in an experiment in progress. The code does not have automated
@@ -96,7 +85,7 @@ Example output:
 
 ### Rails 4 / Edge Rails
 
-Note that you need to use the `rails_4` branch in order for this to work. In newer Rails, notifications become more dtrace-like. Rather than a notification sending a message to `#call` (which gets start time and end time), they can send two messages, `#start` and `#finish`. This way, you can do your own math on the notifications.
+In newer Rails, notifications become more dtrace-like. Rather than a notification sending a message to `#call` (which gets start time and end time), they can send two messages, `#start` and `#finish`. This way, you can do your own math on the notification timing.
 
 In *rails-dtrace*, the notification name becomes the probe function, and we map `start -> entry` and `finish -> exit`.
 
@@ -106,6 +95,7 @@ Arguments to probes are:
 
 * `arg0` - Unique identifier of notification - String
 * `arg1` - Stringified hash of notification payload - String
+* `arg2` - 0 - This is for seamless compatibility with older Rails - Integer
 
 The following dtrace command can be used, as an example:
 
