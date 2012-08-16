@@ -2,6 +2,8 @@ require 'usdt'
 
 module DTrace
   class Subscriber
+    MAX_INT = 2147483647
+
     cattr_reader :probes, :provider
 
     @@provider = USDT::Provider.create :ruby, :rails
@@ -64,7 +66,7 @@ module DTrace
 
       def nsec_time_diff(start_time, end_time)
         return 0 unless start_time and end_time
-        ((end_time - start_time) * 1000000000).to_i
+        [((end_time - start_time) * 1000000000).to_i, MAX_INT].min
       end
     end
   end

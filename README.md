@@ -60,7 +60,7 @@ Arguments to probes are:
 
 The notification name is turned into the probe function, and the probe name is defined as 'event'. For instance, `sql.active_record` becomes `ruby*:rails:sql.active_record:event`. This is to make events somewhat compatible with the edge Rails method of firing events, described below.
 
-Some operating systems (MacOS X, I'm looking at you) don't give you nanosecond time resolution. In this case you get microseconds multipled by 1000.
+Some operating systems (MacOS X, I'm looking at you) don't give you nanosecond time resolution. In this case you get microseconds multipled by 1000. If the time differential is larger than the maximum value of a C int *(2147483647)*, then that will be output instead.
 
 The following dtrace command can be used, as an example:
 
