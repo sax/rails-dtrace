@@ -89,7 +89,7 @@ In newer Rails, notifications become more dtrace-like. Rather than a notificatio
 
 In *rails-dtrace*, the notification name becomes the probe function, and we map `start -> entry` and `finish -> exit`.
 
-If a notification subscriber responds to #call, ActiveSupport::Notifications will send methods in the Rails 3 way. For this reason the rails-dtrace code is incompatible at this time. It could conceivably be done with some metaprogramming to trick the Rails framework, but I'd prefer to keep the rails-dtrace code small and readable.
+If a subscriber responds to `#start` and `#finish` it will work in the new way. If it does not, Rails will try to fall back to the older way with `#call`. Because of this, rails-dtrace can be used with either codebase.
 
 Arguments to probes are:
 
