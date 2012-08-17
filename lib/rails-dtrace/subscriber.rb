@@ -1,4 +1,5 @@
 require 'usdt'
+require 'active_support/core_ext/class/attribute_accessors'
 
 module DTrace
   class Subscriber

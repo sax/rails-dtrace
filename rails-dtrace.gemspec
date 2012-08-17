@@ -16,5 +16,6 @@ Gem::Specification.new do |gem|
   gem.version       = Dtrace::VERSION
 
   gem.add_dependency 'ruby-usdt'
+  gem.add_dependency 'rails', '>= 3.0'
   gem.add_development_dependency 'rspec'
 end
