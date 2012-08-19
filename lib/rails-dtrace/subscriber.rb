@@ -1,13 +1,13 @@
 require 'usdt'
 require 'active_support/core_ext/class/attribute_accessors'
+require 'rails-dtrace/provider'
 
 module DTrace
   class Subscriber
     MAX_INT = 2147483647
 
-    cattr_reader :probes, :provider
+    cattr_reader :probes
 
-    @@provider = USDT::Provider.create :ruby, :rails
     @@probes = {}
     @@enabled = false
 
@@ -16,7 +16,9 @@ module DTrace
         @logger ||= Rails.logger if defined?(Rails)
       end
 
-      attr_writer :logger
+      def provider
+        @provider ||= DTrace::Provider.new
+      end
 
       # Rails 3.x define instruments as blocks that wrap code. When the code
       # finishes executing, subscribers are called with the start and end time.
@@ -35,8 +37,6 @@ module DTrace
       def finish(notification, id, payload)
         fire_probe(notification, id, payload, 'exit')
       end
-
-      protected
 
       def find_or_create_probe(probe_func, probe_name)
         probe_id = "#{probe_func}::#{probe_name}"
